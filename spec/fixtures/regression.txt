@@ -147,3 +147,11 @@ Issue #289.
 .
 <p>[a](&lt;b) c&gt;</p>
 ````````````````````````````````
+
+Don't strikethrough with only one tilde.
+
+```````````````````````````````` example
+~hello~
+.
+<p>~hello~</p>
+````````````````````````````````

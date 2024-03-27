@@ -40,7 +40,7 @@ module Markd::Parser
               backslash(node)
             when '`'
               backtick(node)
-            when '*', '_'
+            when '*', '_', '~'
               handle_delim(char, node)
             when '\'', '"'
               @options.smart? && handle_delim(char, node)
@@ -297,6 +297,7 @@ module Markd::Parser
           '*'  => delimiter,
           '\'' => delimiter,
           '"'  => delimiter,
+          '~'  => delimiter,
         } of Char => Delimiter?
 
         # move forward, looking for closers, and handling each
@@ -326,12 +327,15 @@ module Markd::Parser
           old_closer = closer
 
           case closer_char
-          when '*', '_'
+          when '*', '_', '~'
             unless opener
               closer = closer.next?
             else
               # calculate actual number of delimiters used from closer
               use_delims = (closer.num_delims >= 2 && opener.num_delims >= 2) ? 2 : 1
+
+              return if (closer_char == '~') && use_delims == 1
+
               opener_inl = opener.node
               closer_inl = closer.node
 
@@ -342,8 +346,12 @@ module Markd::Parser
               opener_inl.text = opener_inl.text[0..(-use_delims - 1)]
               closer_inl.text = closer_inl.text[0..(-use_delims - 1)]
 
-              # build contents for new emph element
-              emph = Node.new((use_delims == 1) ? Node::Type::Emphasis : Node::Type::Strong)
+              if closer_char == '~'
+                emph = Node.new(Node::Type::Strikethrough)
+              else
+                # build contents for new emph element
+                emph = Node.new((use_delims == 1) ? Node::Type::Emphasis : Node::Type::Strong)
+              end
 
               tmp = opener_inl.next?
               while tmp && tmp != closer_inl
@@ -771,7 +779,7 @@ module Markd::Parser
 
     private def main_char?(char)
       case char
-      when '\n', '`', '[', ']', '\\', '!', '<', '&', '*', '_', '\'', '"'
+      when '\n', '`', '[', ']', '\\', '!', '<', '&', '*', '_', '~', '\'', '"'
         false
       else
         true
@@ -812,7 +820,7 @@ module Markd::Parser
       text[1..-2].strip.downcase.gsub("\n", " ")
     end
 
-    private RESERVED_CHARS = ['&', '+', ',', '(', ')', '\'', '#', '*', '!', '#', '$', '/', ':', ';', '?', '@', '=']
+    private RESERVED_CHARS = ['&', '+', ',', '(', ')', '\'', '#', '*', '~', '!', '#', '$', '/', ':', ';', '?', '@', '=']
 
     def normalize_uri(uri : String)
       String.build(capacity: uri.bytesize) do |io|
