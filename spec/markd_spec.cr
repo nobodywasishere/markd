@@ -3,6 +3,9 @@ require "./spec_helper"
 # Commonmark spec examples
 describe_spec("fixtures/spec.txt")
 
+# GFM spec examples
+describe_spec("fixtures/gfm-spec.txt")
+
 # Smart punctuation examples
 describe_spec("fixtures/smart_punct.txt", smart: true)
 

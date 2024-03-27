@@ -76,7 +76,7 @@ def extract_spec_tests(file)
           examples[current_section] = {} of Int32 => Hash(String, String)
           example_count = 0
         else
-          if !test_start && !result_start && line =~ /^`{32} example$/
+          if !test_start && !result_start && line =~ /^`{32} example[a-z ]*$/
             test_start = true
           elsif test_start && !result_start && line =~ /^\.$/
             test_start = false
