@@ -4,13 +4,13 @@ require "./spec_helper"
 describe_spec("fixtures/spec.txt")
 
 # GFM spec examples
-describe_spec("fixtures/gfm-spec.txt")
+describe_spec("fixtures/gfm-spec.txt", gfm: true)
 
 # Smart punctuation examples
 describe_spec("fixtures/smart_punct.txt", smart: true)
 
 # Regression examples
-describe_spec("fixtures/regression.txt")
+describe_spec("fixtures/regression.txt", gfm: true)
 
 describe Markd do
   # Thanks Ryan Westlund <rlwestlund@gmail.com> feedback via email.

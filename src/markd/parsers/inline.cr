@@ -40,8 +40,14 @@ module Markd::Parser
               backslash(node)
             when '`'
               backtick(node)
-            when '*', '_', '~'
+            when '*', '_'
               handle_delim(char, node)
+            when '~'
+              if @options.gfm
+                handle_delim(char, node)
+              else
+                string(node)
+              end
             when '\'', '"'
               @options.smart? && handle_delim(char, node)
             when '['
@@ -297,8 +303,9 @@ module Markd::Parser
           '*'  => delimiter,
           '\'' => delimiter,
           '"'  => delimiter,
-          '~'  => delimiter,
         } of Char => Delimiter?
+
+        openers_bottom['~'] = delimiter if @options.gfm
 
         # move forward, looking for closers, and handling each
         while closer
@@ -328,55 +335,57 @@ module Markd::Parser
 
           case closer_char
           when '*', '_', '~'
-            unless opener
-              closer = closer.next?
-            else
-              # calculate actual number of delimiters used from closer
-              use_delims = (closer.num_delims >= 2 && opener.num_delims >= 2) ? 2 : 1
-
-              return if (closer_char == '~') && use_delims == 1
-
-              opener_inl = opener.node
-              closer_inl = closer.node
-
-              # remove used delimiters from stack elts and inlines
-              opener.num_delims -= use_delims
-              closer.num_delims -= use_delims
-
-              opener_inl.text = opener_inl.text[0..(-use_delims - 1)]
-              closer_inl.text = closer_inl.text[0..(-use_delims - 1)]
-
-              if closer_char == '~'
-                emph = Node.new(Node::Type::Strikethrough)
+            if closer_char != '~' || (closer_char == '~' && @options.gfm)
+              unless opener
+                closer = closer.next?
               else
-                # build contents for new emph element
-                emph = Node.new((use_delims == 1) ? Node::Type::Emphasis : Node::Type::Strong)
-              end
+                # calculate actual number of delimiters used from closer
+                use_delims = (closer.num_delims >= 2 && opener.num_delims >= 2) ? 2 : 1
 
-              tmp = opener_inl.next?
-              while tmp && tmp != closer_inl
-                next_node = tmp.next?
-                tmp.unlink
-                emph.append_child(tmp)
-                tmp = next_node
-              end
+                return if (closer_char == '~') && use_delims == 1
 
-              opener_inl.insert_after(emph)
+                opener_inl = opener.node
+                closer_inl = closer.node
 
-              # remove elts between opener and closer in delimiters stack
-              remove_delimiter_between(opener, closer)
+                # remove used delimiters from stack elts and inlines
+                opener.num_delims -= use_delims
+                closer.num_delims -= use_delims
 
-              # if opener has 0 delims, remove it and the inline
-              if opener.num_delims == 0
-                opener_inl.unlink
-                remove_delimiter(opener)
-              end
+                opener_inl.text = opener_inl.text[0..(-use_delims - 1)]
+                closer_inl.text = closer_inl.text[0..(-use_delims - 1)]
 
-              if closer.num_delims == 0
-                closer_inl.unlink
-                tmp_stack = closer.next?
-                remove_delimiter(closer)
-                closer = tmp_stack
+                if closer_char == '~'
+                  emph = Node.new(Node::Type::Strikethrough)
+                else
+                  # build contents for new emph element
+                  emph = Node.new((use_delims == 1) ? Node::Type::Emphasis : Node::Type::Strong)
+                end
+
+                tmp = opener_inl.next?
+                while tmp && tmp != closer_inl
+                  next_node = tmp.next?
+                  tmp.unlink
+                  emph.append_child(tmp)
+                  tmp = next_node
+                end
+
+                opener_inl.insert_after(emph)
+
+                # remove elts between opener and closer in delimiters stack
+                remove_delimiter_between(opener, closer)
+
+                # if opener has 0 delims, remove it and the inline
+                if opener.num_delims == 0
+                  opener_inl.unlink
+                  remove_delimiter(opener)
+                end
+
+                if closer.num_delims == 0
+                  closer_inl.unlink
+                  tmp_stack = closer.next?
+                  remove_delimiter(closer)
+                  closer = tmp_stack
+                end
               end
             end
           when '\''
@@ -779,8 +788,10 @@ module Markd::Parser
 
     private def main_char?(char)
       case char
-      when '\n', '`', '[', ']', '\\', '!', '<', '&', '*', '_', '~', '\'', '"'
+      when '\n', '`', '[', ']', '\\', '!', '<', '&', '*', '_', '\'', '"'
         false
+      when '~'
+        !@options.gfm
       else
         true
       end
@@ -820,7 +831,7 @@ module Markd::Parser
       text[1..-2].strip.downcase.gsub("\n", " ")
     end
 
-    private RESERVED_CHARS = ['&', '+', ',', '(', ')', '\'', '#', '*', '~', '!', '#', '$', '/', ':', ';', '?', '@', '=']
+    private RESERVED_CHARS = ['&', '+', ',', '(', ')', '\'', '#', '*', '!', '#', '$', '/', ':', ';', '?', '@', '=']
 
     def normalize_uri(uri : String)
       String.build(capacity: uri.bytesize) do |io|
