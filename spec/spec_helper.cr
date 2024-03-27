@@ -2,6 +2,8 @@ require "spec"
 require "../src/markd"
 
 def describe_spec(file, smart = false, render = false)
+  file = File.join(__DIR__, file)
+
   specs = extract_spec_tests(file)
 
   skip_examples = [] of Int32
@@ -62,9 +64,8 @@ def extract_spec_tests(file)
   test_start = false
   result_start = false
 
-  path = File.expand_path(File.join("..", file), __FILE__)
   begin
-    File.open(path) do |f|
+    File.open(file) do |f|
       line_number = 0
       while line = f.read_line
         line_number += 1
