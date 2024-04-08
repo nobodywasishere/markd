@@ -1,4 +1,5 @@
 module Markd::EmojiEntities
+  # Generated from https://api.github.com/emojis
   EMOJI_MAPPINGS = {
     "+1"                                   => "\u{1f44d}",
     "-1"                                   => "\u{1f44e}",
