@@ -47,7 +47,8 @@ def assert_example(file, section, index, example, smart, gfm = false)
 
   options = Markd::Options.new(
     gfm: gfm,
-    tagfilter: example["test_tag"] == "tagfilter"
+    tagfilter: example["test_tag"] == "tagfilter",
+    emoji: example["test_tag"] == "emoji",
   )
   options.smart = true if smart
   it "- #{index}\n#{show_space(markdown)}", file, line do
@@ -99,7 +100,6 @@ def extract_spec_tests(file)
               "test_tag" => (test_tag == "example" ? "" : test_tag),
             } of String => String
 
-            puts examples[current_section][example_count]
             examples[current_section][example_count]["markdown"] += line + "\n"
           elsif !test_start && result_start
             examples[current_section][example_count]["html"] += line + "\n"

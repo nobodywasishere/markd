@@ -1,0 +1,33 @@
+## Emoji
+
+```````````````````````````````` example emoji
+:100:
+.
+<p>💯</p>
+````````````````````````````````
+
+```````````````````````````````` example emoji
+:gb:
+.
+<p>🇬🇧</p>
+````````````````````````````````
+
+```````````````````````````````` example emoji
+:people_holding_hands:
+.
+<p>🧑🤝🧑</p>
+````````````````````````````````
+
+```````````````````````````````` example emoji
+:scotland:
+.
+<p>🏴󠁧󠁢󠁳󠁣󠁴󠁿</p>
+````````````````````````````````
+
+```````````````````````````````` example emoji
+:emoji_doesnt_exist:
+.
+<p>:emoji_doesnt_exist:</p>
+````````````````````````````````
+
+There are some issues with multi-character emoji currently, will need to investigate more.

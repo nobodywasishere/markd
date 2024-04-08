@@ -60,6 +60,8 @@ module Markd::Parser
               auto_link(node) || html_tag(node)
             when '&'
               entity(node)
+            when ':'
+              emoji(node)
             else
               string(node)
             end
@@ -467,6 +469,41 @@ module Markd::Parser
         decoded_text = HTML.decode_entity text
         node.append_child(text(decoded_text))
         true
+      else
+        false
+      end
+    end
+
+    private def emoji(node : Node)
+      return false unless @options.emoji
+
+      if char_at?(@pos) == ':'
+        pos = @pos + 1
+        loop do
+          char = char_at?(pos)
+          pos += 1
+
+          case char
+          when ':'
+            break
+          when Char::ZERO, nil
+            return false
+          when 'a'..'z', 'A'..'Z', '0'..'9', '+', '-', '_'
+            nil
+          else
+            return false
+          end
+        end
+
+        text = @text.byte_slice((@pos + 1), (pos - 1) - (@pos + 1))
+        if (emoji = EmojiEntities::EMOJI_MAPPINGS[text]?)
+          @pos = pos
+          node.append_child(text(emoji))
+
+          true
+        else
+          false
+        end
       else
         false
       end
