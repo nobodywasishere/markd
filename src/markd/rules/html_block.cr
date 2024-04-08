@@ -29,7 +29,9 @@ module Markd::Rule
     end
 
     def token(parser : Parser, container : Node) : Nil
-      container.text = container.text.gsub(/(\n *)+$/, "")
+      text = container.text.gsub(/(\n *)+$/, "")
+      text = self.class.escape_disallowed_html(text) if parser.gfm && parser.tagfilter
+      container.text = text
     end
 
     def can_contain?(type)
@@ -38,6 +40,15 @@ module Markd::Rule
 
     def accepts_lines? : Bool
       true
+    end
+
+    def self.escape_disallowed_html(text : String) : String
+      # TODO: more performant/secure method
+      GFM_DISALLOWED_HTML_TAGS.each do |tag|
+        text = text.gsub(/<\s*#{tag}\b/i) { |match| "&lt;#{match[1..]}" }
+      end
+
+      text
     end
   end
 end

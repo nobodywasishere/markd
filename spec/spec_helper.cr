@@ -45,7 +45,10 @@ def assert_example(file, section, index, example, smart, gfm = false)
   html = example["html"].gsub("→", "\t")
   line = example["line"].to_i
 
-  options = Markd::Options.new(gfm: gfm)
+  options = Markd::Options.new(
+    gfm: gfm,
+    tagfilter: example["test_tag"] == "tagfilter"
+  )
   options.smart = true if smart
   it "- #{index}\n#{show_space(markdown)}", file, line do
     output = Markd.to_html(markdown, options)
@@ -67,6 +70,8 @@ def extract_spec_tests(file)
   begin
     File.open(file) do |f|
       line_number = 0
+      test_tag = ""
+
       while line = f.read_line
         line_number += 1
         line = line.gsub(/\r\n?/, "\n")
@@ -77,8 +82,9 @@ def extract_spec_tests(file)
           examples[current_section] = {} of Int32 => Hash(String, String)
           example_count = 0
         else
-          if !test_start && !result_start && line =~ /^`{32} example[a-z ]*$/
+          if !test_start && !result_start && line =~ /^`{32} example([a-z ])*$/
             test_start = true
+            test_tag = line[line.rindex!(' ') + 1..-1]
           elsif test_start && !result_start && line =~ /^\.$/
             test_start = false
             result_start = true
@@ -90,8 +96,10 @@ def extract_spec_tests(file)
               "line"     => line_number.to_s,
               "markdown" => "",
               "html"     => "",
+              "test_tag" => (test_tag == "example" ? "" : test_tag),
             } of String => String
 
+            puts examples[current_section][example_count]
             examples[current_section][example_count]["markdown"] += line + "\n"
           elsif !test_start && result_start
             examples[current_section][example_count]["html"] += line + "\n"

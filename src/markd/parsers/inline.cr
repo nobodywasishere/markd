@@ -432,6 +432,7 @@ module Markd::Parser
     private def html_tag(node : Node)
       if text = match(Rule::HTML_TAG)
         child = Node.new(Node::Type::HTMLInline)
+        text = Rule::HTMLBlock.escape_disallowed_html(text) if @options.gfm && @options.tagfilter
         child.text = text
         node.append_child(child)
         true
