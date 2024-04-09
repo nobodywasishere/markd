@@ -467,6 +467,7 @@ module Markd::Parser
         end
 
         decoded_text = HTML.decode_entity text
+        decoded_text = " " if decoded_text == "\u00A0" && @options.gfm
         node.append_child(text(decoded_text))
         true
       else
