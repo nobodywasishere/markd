@@ -10,7 +10,7 @@ describe_spec("fixtures/gfm-spec.txt", gfm: true)
 describe_spec("fixtures/smart_punct.txt", smart: true)
 
 # Regression examples
-describe_spec("fixtures/regression.txt", gfm: true)
+describe_spec("fixtures/regression.txt")
 
 describe_spec("fixtures/emoji.txt")
 

@@ -150,7 +150,7 @@ Issue #289.
 
 Don't strikethrough with only one tilde.
 
-```````````````````````````````` example
+```````````````````````````````` example gfm
 ~hello~
 .
 <p>~hello~</p>
