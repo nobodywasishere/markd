@@ -43,6 +43,7 @@ module Markd
     property base_url : URI?
 
     property tagfilter : Bool
+    property autolink : Bool
     property emoji : Bool
 
     def initialize(
@@ -54,6 +55,7 @@ module Markd
       @safe = false,
       @prettyprint = false,
       @tagfilter = false,
+      @autolink = false,
       @emoji = false,
       @base_url = nil
     )

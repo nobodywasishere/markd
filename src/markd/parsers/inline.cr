@@ -62,6 +62,8 @@ module Markd::Parser
               entity(node)
             when ':'
               emoji(node)
+            when 'w', 'h', 'f'
+              auto_link_ext(node)
             else
               string(node)
             end
@@ -421,10 +423,21 @@ module Markd::Parser
 
     private def auto_link(node : Node)
       if text = match(Rule::EMAIL_AUTO_LINK)
-        node.append_child(link(text, true))
+        node.append_child(link(text[1..-2], true))
         return true
       elsif text = match(Rule::AUTO_LINK)
-        node.append_child(link(text, false))
+        node.append_child(link(text[1..-2], false))
+        return true
+      end
+
+      false
+    end
+
+    private def auto_link_ext(node : Node)
+      return false unless @options.autolink
+
+      if text = match(Rule::AUTO_LINK_EXT)
+        node.append_child(link(text, email: false, add_http: true))
         return true
       end
 
@@ -540,14 +553,19 @@ module Markd::Parser
       end
     end
 
-    private def link(match : String, email = false) : Node
-      dest = match[1..-2]
-      destination = email ? "mailto:#{dest}" : dest
+    private def link(match : String, email = false, add_http = false) : Node
+      destination = email ? "mailto:#{match}" : match
 
       node = Node.new(Node::Type::Link)
       node.data["title"] = ""
-      node.data["destination"] = normalize_uri(destination)
-      node.append_child(text(dest))
+
+      if add_http
+        node.data["destination"] = "http://" + normalize_uri(destination)
+      else
+        node.data["destination"] = normalize_uri(destination)
+      end
+
+      node.append_child(text(match))
       node
     end
 
@@ -831,6 +849,8 @@ module Markd::Parser
         false
       when '~'
         !@options.gfm
+      when 'w', 'h', 'f'
+        !(@options.gfm && @options.autolink)
       else
         true
       end
