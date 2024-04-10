@@ -15,7 +15,7 @@
 ```````````````````````````````` example emoji
 :people_holding_hands:
 .
-<p>🧑🤝🧑</p>
+<p>🧑‍🤝‍🧑</p>
 ````````````````````````````````
 
 ```````````````````````````````` example emoji
@@ -30,4 +30,8 @@
 <p>:emoji_doesnt_exist:</p>
 ````````````````````````````````
 
-There are some issues with multi-character emoji currently, will need to investigate more.
+```````````````````````````````` example emoji
+:family_man_boy_boy:
+.
+<p>👨‍👦‍👦</p>
+````````````````````````````````

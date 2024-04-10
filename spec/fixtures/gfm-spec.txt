@@ -6598,7 +6598,7 @@ a*"foo"*
 Unicode nonbreaking spaces count as whitespace, too:
 
 ```````````````````````````````` example
-* a *
+* a *
 .
 <p>* a *</p>
 ````````````````````````````````
