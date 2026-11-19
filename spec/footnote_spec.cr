@@ -1,5 +1,7 @@
 require "./spec_helper"
 
+describe_spec("fixtures/markd-footnotes.txt", gfm: true)
+
 describe "GFM footnotes" do
   it "leaves ordinary caret-prefixed link labels available in CommonMark mode" do
     Markd.to_html("See [^note].\n\n[^note]: /url").should eq(%(<p>See <a href="/url">^note</a>.</p>\n))
@@ -26,6 +28,22 @@ describe "GFM footnotes" do
     html.should contain(%(<a href="#fn-a" id="fnref-a-2" data-footnote-ref>1</a>))
     html.should contain(%(<a href="#fnref-a-2" class="footnote-backref"))
     html.should_not contain("Hidden")
+  end
+
+  it "links back to each occurrence when a label matches a repeated reference ID" do
+    {"[^x] [^x] [^x-2]", "[^x-2] [^x] [^x]"}.each do |references|
+      input = "#{references}\n\n[^x]: first\n[^x-2]: second"
+      html = Markd.to_html(input, Markd::Options.new(gfm: true))
+      ids = html.scan(/id="(fnref[^"]+)" data-footnote-ref/).map(&.[1])
+      ids.uniq.size.should eq(3)
+
+      html.scan(/<li id="fn-([^"]+)">(.*?)<\/li>/m) do |note|
+        expected = html.scan(/href="#fn-#{note[1]}" id="([^"]+)"/).map(&.[1])
+        backlinks = note[2].scan(/href="#([^"]+)" class="footnote-backref"/).map(&.[1])
+        backlinks.should eq(expected)
+      end
+      html.scan(/class="footnote-backref"/).size.should eq(3)
+    end
   end
 
   it "resolves a note after an unmatched image opener in another paragraph" do

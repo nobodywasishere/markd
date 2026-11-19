@@ -6,6 +6,7 @@ module Markd
     @last_output = "\n"
 
     @strong_stack = 0
+    @footnote_reference_labels = {} of String => String
 
     HEADINGS = %w[h1 h2 h3 h4 h5 h6]
 
@@ -383,7 +384,12 @@ module Markd
     end
 
     private def footnote_reference_id(label : String, occurrence : Int32) : String
-      occurrence == 1 ? "fnref-#{label}" : "fnref-#{label}-#{occurrence}"
+      id = occurrence == 1 ? "fnref-#{label}" : "fnref-#{label}-#{occurrence}"
+      owner = @footnote_reference_labels[id] ||= label
+      return id if owner == label
+
+      # Put the occurrence before the label so the fallback cannot collide with a fnref- ID.
+      "fnref#{occurrence}-#{label}"
     end
 
     private def tag(name : String, attrs = nil, self_closing = false, end_tag = false)
