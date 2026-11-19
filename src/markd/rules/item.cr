@@ -11,7 +11,8 @@ module Markd::Rule
       indent_offset = container.data["marker_offset"].as(Int32) + container.data["padding"].as(Int32)
 
       if parser.blank
-        if container.first_child?
+        # A reference-only paragraph may have been removed after the previous blank line.
+        if container.first_child? || container.last_line_blank?
           parser.advance_next_nonspace
         else
           # Blank line after empty list item

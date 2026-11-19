@@ -1072,25 +1072,17 @@ module Markd::Parser
     # Normalize reference label: collapse internal whitespace
     # to single space, remove leading/trailing whitespace, case fold.
     def normalize_reference(text : String)
-      text[1..-2].strip.downcase.gsub("\n", " ")
+      text[1..-2].strip.downcase(:fold).gsub("\n", " ")
     end
 
     private RESERVED_CHARS = ['&', '+', ',', '(', ')', '\'', '#', '*', '!', '#', '$', '/', ':', ';', '?', '@', '=']
 
     def normalize_uri(uri : String)
       String.build(capacity: uri.bytesize) do |io|
-        URI.encode(decode_uri(uri), io) do |byte|
+        URI.encode(URI.decode(uri), io) do |byte|
           URI.unreserved?(byte) || RESERVED_CHARS.includes?(byte.chr)
         end
       end
-    end
-
-    def decode_uri(text : String)
-      decoded = URI.decode(text)
-      if decoded.includes?('&') && decoded.includes?(';')
-        decoded = decoded.gsub(/^&(\w+);$/) { |chars| HTML.decode_entities(chars) }
-      end
-      decoded
     end
 
     class Bracket

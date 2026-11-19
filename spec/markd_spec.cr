@@ -1,12 +1,13 @@
 require "./spec_helper"
 
-# Commonmark spec examples
+# commonmark/cmark 0.31.2, test/spec.txt
 describe_spec("fixtures/spec.txt")
 
 # Smart punctuation examples
 describe_spec("fixtures/smart_punct.txt", smart: true)
 
-# Regression examples
+# commonmark/cmark d56b4bdced7563c7bd596f8f80dd0521eb8ca34a, test/regression.txt
+# The fence alias case is pending because Markd preserves the plain HTML class.
 describe_spec("fixtures/regression.txt")
 
 describe_spec("fixtures/emoji.txt")

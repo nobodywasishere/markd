@@ -56,7 +56,7 @@ module Markd::Parser
 
     def parse(source : String)
       Utils.timer("block parsing", @options.time?) do
-        parse_blocks(source)
+        parse_blocks(source.lchop('\uFEFF'))
       end
 
       Utils.timer("inline parsing", @options.time?) do

@@ -9549,7 +9549,7 @@ Illegal attributes in closing tag:
 
 Comments:
 
-```````````````````````````````` example pending
+```````````````````````````````` example
 foo <!-- this is a --
 comment - with hyphens -->
 .
@@ -9557,7 +9557,7 @@ comment - with hyphens -->
 comment - with hyphens --></p>
 ````````````````````````````````
 
-```````````````````````````````` example pending
+```````````````````````````````` example
 foo <!--> foo -->
 
 foo <!---> foo -->

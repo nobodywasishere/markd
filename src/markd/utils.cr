@@ -11,10 +11,16 @@ module Markd
       puts "#{label}: #{(Time.utc - start_time).total_milliseconds}ms"
     end
 
-    DECODE_ENTITIES_REGEX = Regex.new("\\\\" + Rule::ESCAPABLE_STRING, Regex::Options::IGNORE_CASE)
+    DECODE_ENTITIES_REGEX = /#{Rule::ESCAPED_CHAR_STRING}|#{Rule::NUMERIC_HTML_ENTITY_STRING}|#{Rule::HTML_ENTITY_STRING}/
 
     def self.decode_entities_string(text : String) : String
-      HTML.decode_entities(text).gsub(DECODE_ENTITIES_REGEX, &.[1].to_s)
+      text.gsub(DECODE_ENTITIES_REGEX) do |token|
+        if token.starts_with?('\\')
+          token.byte_slice(1)
+        else
+          HTML.decode_entity(token.byte_slice(1, token.bytesize - 2))
+        end
+      end
     end
   end
 end

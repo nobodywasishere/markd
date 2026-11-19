@@ -31,7 +31,13 @@ module Markd::Rule
               (pos = parser.inline_lexer.reference(container.text, parser.refmap)) && pos > 0
           container.text = container.text.byte_slice(pos)
         end
-        return MatchValue::None if container.text.empty?
+        if container.text.empty?
+          if Rule::THEMATIC_BREAK.matches?(match[0])
+            parser.tip = parent
+            container.unlink
+          end
+          return MatchValue::None
+        end
 
         heading = Node.new(Node::Type::Heading)
         heading.source_pos = container.source_pos

@@ -6,7 +6,7 @@
 
 <hr />
 
-Yet another markdown parser built for speed, written in [Crystal](https://crystal-lang.org), Compliant to [CommonMark](http://spec.commonmark.org) specification (`v0.29`). Copy from [commonmark.js](https://github.com/jgm/commonmark.js).
+Markd is a Markdown parser written in [Crystal](https://crystal-lang.org) and based on [commonmark.js](https://github.com/jgm/commonmark.js). Its test suite uses the examples from [CommonMark 0.31.2](https://spec.commonmark.org/0.31.2/).
 
 ## Installation
 
@@ -26,7 +26,7 @@ require "markd"
 markdown = <<-MD
 # Hello Markd
 
-> Yet another markdown parser built for speed, written in Crystal, Compliant to CommonMark specification.
+> Markd is a CommonMark parser written in Crystal.
 MD
 
 html = Markd.to_html(markdown)
