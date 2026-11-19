@@ -6,6 +6,7 @@ module Markd::Parser
     include Parser
 
     property refmap
+    property footnote_definitions = {} of String => Node
     private getter! brackets
 
     @delimiters : Delimiter?
@@ -195,7 +196,9 @@ module Markd::Parser
     private def bang(node : Node)
       start_pos = @pos
       @pos += 1
-      if char_at?(@pos) == '['
+      if char_at?(@pos) == '[' &&
+         !(@options.gfm? && char_at?(@pos + 1) == '^' &&
+         Rule::FOOTNOTE_LABEL.matches?(@text.byte_slice(@pos)))
         @pos += 1
         child = text("![")
         node.append_child(child)
@@ -219,12 +222,19 @@ module Markd::Parser
 
     private def open_bracket(node : Node)
       start_pos = @pos
-      @pos += 1
+      label = match(Rule::FOOTNOTE_LABEL) if @options.gfm? && char_at?(@pos + 1) == '^'
+      # A possible link needs its label parsed as normal inline content.
+      literal_label = label && char_at?(@pos) != '(' && (char_at?(@pos) != '[' || @refmap.empty?)
+      @pos = literal_label ? @pos - 1 : start_pos + 1
 
       child = text("[")
       node.append_child(child)
 
       add_bracket(child, start_pos, false)
+      brackets.footnote_label = label
+      if literal_label && label
+        node.append_child(text(label.byte_slice(1, label.bytesize - 2)))
+      end
 
       true
     end
@@ -318,13 +328,11 @@ module Markd::Parser
         remove_bracket
         opener.node.unlink
 
-        unless is_image
-          opener = @brackets
-          while opener
-            opener.active = false unless opener.image?
-            opener = opener.previous?
-          end
-        end
+        deactivate_link_openers unless is_image
+      elsif close_footnote(opener, start_pos)
+        remove_bracket
+        @pos = start_pos
+        deactivate_link_openers if opener.node.type.footnote_reference?
       else
         remove_bracket
         @pos = start_pos
@@ -332,6 +340,32 @@ module Markd::Parser
       end
 
       true
+    end
+
+    private def close_footnote(opener : Bracket, end_pos : Int32) : Bool
+      label = opener.footnote_label || return false
+      return false unless label.bytesize == end_pos - opener.index
+
+      key = label.byte_slice(2, label.bytesize - 3).downcase(:fold)
+      if @footnote_definitions.has_key?(key) && !in_image?(opener.previous?)
+        opener.node.type = Node::Type::FootnoteReference
+        opener.node.data["label"] = key
+      end
+
+      process_delimiters(opener.previous_delimiter)
+      while (child = opener.node.next?)
+        child.unlink
+      end
+      opener.node.text = label
+      true
+    end
+
+    private def in_image?(bracket : Bracket?) : Bool
+      while bracket
+        return true if bracket.image?
+        bracket = bracket.previous?
+      end
+      false
     end
 
     private def process_delimiters(delimiter : Delimiter?)
@@ -465,6 +499,14 @@ module Markd::Parser
       # remove all delimiters
       while (curr_delimiter = @delimiters) && curr_delimiter != delimiter
         remove_delimiter(curr_delimiter)
+      end
+    end
+
+    private def deactivate_link_openers
+      opener = @brackets
+      while opener
+        opener.active = false unless opener.image?
+        opener = opener.previous?
       end
     end
 
@@ -1102,6 +1144,7 @@ module Markd::Parser
       property? image : Bool
       property? active : Bool
       property? bracket_after : Bool
+      property footnote_label : String?
 
       def initialize(@node, @previous, @previous_delimiter, @index, @image, @active = true)
         @bracket_after = false

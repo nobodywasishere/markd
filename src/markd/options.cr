@@ -6,7 +6,7 @@ module Markd
     # Render parsing cost time for reading the source, parsing blocks, and parsing inline.
     property? time : Bool
 
-    # Enables GitHub Flavored Markdown support.
+    # Enables GitHub Flavored Markdown support, including footnotes.
     #
     # https://github.github.com/gfm/
     property? gfm : Bool

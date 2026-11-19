@@ -257,6 +257,10 @@ module Markd
         newline
         tag("p", attrs(node))
       else
+        if (parent = node.parent?) && parent.type.footnote_definition? && !node.next?
+          literal(" ")
+          footnote_backrefs(parent)
+        end
         tag("p", end_tag: true)
         newline
       end
@@ -300,6 +304,88 @@ module Markd
       output(node.text)
     end
 
+    def footnote_section(node : Node, entering : Bool) : Nil
+      newline
+      if entering
+        tag("section", {"class" => "footnotes", "data-footnotes" => nil})
+        newline
+        tag("ol")
+      else
+        tag("ol", end_tag: true)
+        newline
+        tag("section", end_tag: true)
+      end
+      newline
+    end
+
+    def footnote_definition(node : Node, entering : Bool) : Nil
+      newline
+      if entering
+        tag("li", {"id" => "fn-#{footnote_label(node)}"})
+      else
+        unless node.last_child?.try(&.type.paragraph?)
+          footnote_backrefs(node)
+          newline
+        end
+        tag("li", end_tag: true)
+      end
+      newline
+    end
+
+    def footnote_reference(node : Node, entering : Bool) : Nil
+      return unless entering
+      label = footnote_label(node)
+      occurrence = node.data["occurrence"].as(Int32)
+      tag("sup", {"class" => "footnote-ref"}) do
+        tag("a", {
+          "href"              => "#fn-#{label}",
+          "id"                => footnote_reference_id(label, occurrence),
+          "data-footnote-ref" => nil,
+        }) do
+          literal(node.data["number"].to_s)
+        end
+      end
+    end
+
+    private def footnote_backrefs(node : Node) : Nil
+      label = footnote_label(node)
+      number = node.data["number"].to_s
+      1.upto(node.data["references"].as(Int32)) do |occurrence|
+        if occurrence > 1
+          literal(" ")
+          index = "#{number}-#{occurrence}"
+        else
+          index = number
+        end
+
+        tag("a", {
+          "href"                      => "##{footnote_reference_id(label, occurrence)}",
+          "class"                     => "footnote-backref",
+          "data-footnote-backref"     => nil,
+          "data-footnote-backref-idx" => index,
+          "aria-label"                => "Back to reference #{index}",
+        }) do
+          literal("↩")
+          if occurrence > 1
+            tag("sup", {"class" => "footnote-ref"}) { literal(occurrence.to_s) }
+          end
+        end
+      end
+    end
+
+    private def footnote_label(node : Node) : String
+      encoded = String.build do |io|
+        URI.encode(node.data["label"].as(String), io) do |byte|
+          URI.unreserved?(byte) || URI.reserved?(byte)
+        end
+      end
+      escape(encoded).gsub("'", "&#x27;")
+    end
+
+    private def footnote_reference_id(label : String, occurrence : Int32) : String
+      occurrence == 1 ? "fnref-#{label}" : "fnref-#{label}-#{occurrence}"
+    end
+
     private def tag(name : String, attrs = nil, self_closing = false, end_tag = false)
       return if @disable_tag > 0
 
@@ -307,7 +393,8 @@ module Markd
       @output_io << "/" if end_tag
       @output_io << name
       attrs.try &.each do |key, value|
-        @output_io << ' ' << key << '=' << '"' << value << '"'
+        @output_io << ' ' << key
+        @output_io << '=' << '"' << value << '"' unless value.nil?
       end
 
       @output_io << " /" if self_closing

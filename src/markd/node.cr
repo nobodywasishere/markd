@@ -29,6 +29,10 @@ module Markd
       TableCell
       TableRow
 
+      FootnoteReference
+      FootnoteDefinition
+      FootnoteSection
+
       def container?
         CONTAINER_TYPES.includes?(self)
       end
@@ -51,6 +55,8 @@ module Markd
       Type::CustomBlock,
       Type::Table,
       Type::TableRow,
+      Type::FootnoteDefinition,
+      Type::FootnoteSection,
       Type::TableCell,
     }
 

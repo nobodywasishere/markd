@@ -7,17 +7,18 @@ module Markd::Parser
     end
 
     RULES = {
-      Node::Type::Document      => Rule::Document.new,
-      Node::Type::BlockQuote    => Rule::BlockQuote.new,
-      Node::Type::Alert         => Rule::BlockQuote.new, # Alerts and BlockQuotes are the same
-      Node::Type::Heading       => Rule::Heading.new,
-      Node::Type::CodeBlock     => Rule::CodeBlock.new,
-      Node::Type::HTMLBlock     => Rule::HTMLBlock.new,
-      Node::Type::ThematicBreak => Rule::ThematicBreak.new,
-      Node::Type::List          => Rule::List.new,
-      Node::Type::Item          => Rule::Item.new,
-      Node::Type::Paragraph     => Rule::Paragraph.new,
-      Node::Type::Table         => Rule::Table.new,
+      Node::Type::Document           => Rule::Document.new,
+      Node::Type::BlockQuote         => Rule::BlockQuote.new,
+      Node::Type::Alert              => Rule::BlockQuote.new, # Alerts and BlockQuotes are the same
+      Node::Type::Heading            => Rule::Heading.new,
+      Node::Type::CodeBlock          => Rule::CodeBlock.new,
+      Node::Type::HTMLBlock          => Rule::HTMLBlock.new,
+      Node::Type::ThematicBreak      => Rule::ThematicBreak.new,
+      Node::Type::FootnoteDefinition => Rule::FootnoteDefinition.new,
+      Node::Type::List               => Rule::List.new,
+      Node::Type::Item               => Rule::Item.new,
+      Node::Type::Paragraph          => Rule::Paragraph.new,
+      Node::Type::Table              => Rule::Table.new,
     }
 
     property! tip : Node?
@@ -124,7 +125,8 @@ module Markd::Parser
         # this is a little performance optimization
         unless @indented
           first_char = @line[@next_nonspace]?
-          unless first_char && (Rule::MAYBE_SPECIAL.includes?(first_char) || first_char.ascii_number? || @line.match(Rule::TABLE_CELL_SEPARATOR))
+          unless first_char && (Rule::MAYBE_SPECIAL.includes?(first_char) || first_char.ascii_number? ||
+                 (gfm? && first_char == '[') || @line.match(Rule::TABLE_CELL_SEPARATOR))
             advance_next_nonspace
             break
           end
@@ -194,8 +196,15 @@ module Markd::Parser
     end
 
     private def process_inlines
-      walker = @document.walker
       @inline_lexer.refmap = @refmap
+      definitions = extract_footnote_definitions if gfm?
+      @inline_lexer.footnote_definitions = definitions if definitions
+      parse_inlines(@document)
+      append_footnotes(definitions) if definitions && !definitions.empty?
+    end
+
+    private def parse_inlines(root : Node)
+      walker = root.walker
       while (event = walker.next)
         node, entering = event
         if !entering && (node.type.paragraph? || node.type.heading? || node.type.table_cell?)
@@ -204,6 +213,60 @@ module Markd::Parser
       end
 
       nil
+    end
+
+    private def extract_footnote_definitions
+      definitions = {} of String => Node
+      walker = @document.walker
+      while (event = walker.next)
+        node, entering = event
+        next unless node.type.footnote_definition?
+
+        if entering
+          definitions[node.data["label"].as(String).downcase(:fold)] ||= node
+        else
+          node.unlink
+        end
+      end
+      definitions
+    end
+
+    private def append_footnotes(definitions : Hash(String, Node))
+      ordered = [] of Node
+      number_footnote_references(@document, definitions, ordered)
+      return if ordered.empty?
+
+      section = Node.new(Node::Type::FootnoteSection)
+      # Number references in the main document first, then in each cited note.
+      index = 0
+      while index < ordered.size
+        definition = ordered[index]
+        parse_inlines(definition)
+        number_footnote_references(definition, definitions, ordered)
+        section.append_child(definition)
+        index += 1
+      end
+      @document.append_child(section)
+    end
+
+    private def number_footnote_references(root : Node, definitions : Hash(String, Node), ordered : Array(Node))
+      walker = root.walker
+      while (event = walker.next)
+        reference, _ = event
+        next unless reference.type.footnote_reference?
+
+        definition = definitions[reference.data["label"].as(String)]
+        unless definition.data.has_key?("number")
+          ordered << definition
+          definition.data["number"] = ordered.size
+        end
+
+        occurrence = (definition.data["references"]?.try(&.as(Int32)) || 0) + 1
+        definition.data["references"] = occurrence
+        reference.data["number"] = definition.data["number"]
+        reference.data["label"] = definition.data["label"]
+        reference.data["occurrence"] = occurrence
+      end
     end
 
     def token(container : Node, line_number : Int32)

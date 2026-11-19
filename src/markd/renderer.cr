@@ -72,6 +72,16 @@ module Markd
     abstract def table_row(node : Node, entering : Bool) : Nil
     abstract def table_cell(node : Node, entering : Bool) : Nil
 
+    def footnote_reference(node : Node, entering : Bool) : Nil
+      text(node, entering)
+    end
+
+    def footnote_definition(node : Node, entering : Bool) : Nil
+    end
+
+    def footnote_section(node : Node, entering : Bool) : Nil
+    end
+
     def render(document : Node, formatter : T? = nil) forall T
       Utils.timer("rendering", @options.time?) do
         walker = document.walker
@@ -121,6 +131,12 @@ module Markd
             table_row(node, entering)
           when Node::Type::TableCell
             table_cell(node, entering)
+          when Node::Type::FootnoteReference
+            footnote_reference(node, entering)
+          when Node::Type::FootnoteDefinition
+            footnote_definition(node, entering)
+          when Node::Type::FootnoteSection
+            footnote_section(node, entering)
           else
             text(node, entering)
           end

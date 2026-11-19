@@ -61,6 +61,9 @@ module Markd
 
     LINK_LABEL = Regex.new("^\\[(?:[^\\\\\\[\\]]|" + ESCAPED_CHAR_STRING + "|\\\\){0,}\\]")
 
+    FOOTNOTE_LABEL      = /\A\[\^([^\] \t\r\n]+)\]/
+    FOOTNOTE_DEFINITION = /#{FOOTNOTE_LABEL}:[ \t]*/
+
     LINK_DESTINATION_BRACES = Regex.new("^(?:[<](?:[^<>\\t\\n\\\\\\x00]|" + ESCAPED_CHAR_STRING + ")*[>])")
 
     # A valid domain name is:
